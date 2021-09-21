@@ -1,0 +1,38 @@
+name: Test Windows
+on: [push, pull_request]
+jobs:
+  msys:
+    runs-on: windows-2019
+    env:
+      MSYSTEM: MINGW64
+      CHERE_INVOKING: 1
+    name: MSYS2 MINGW64
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: git mingw-w64-x86_64-toolchain autoconf automake m4 libtool
+      - name: CI-Build
+        run: |
+          cd file
+          autoreconf -fiv
+          ./configure \
+            --enable-static \
+            --disable-dependency-tracking \
+            --disable-libseccomp \
+            MAKE=mingw32-make
+          mingw32-make
+          ls src/.libs
+          ls magic
+      - name: 'Upload libmagic DLL'
+        uses: actions/upload-artifact@v2
+        with:
+          name: libmagic.dll
+          path: file/src/.libs/libmagic-1.dll
